@@ -1,0 +1,7 @@
+== About Mailbox
+
+Mailbox is a JRuby module that simplifies the creation of Actor-Model functions that are backed by JVM threads.
+"Unobtrusive concurrency for a multicore world" - pgfarley
+
+* jretlang gem is required to use mailbox
+
