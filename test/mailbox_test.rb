@@ -24,27 +24,52 @@ class MailboxTest < Test::Unit::TestCase
 		thread_ids = []
 		latch = Latches::CountDownLatch.new( 1 )
 		klass.new.test_method(latch, thread_ids)
-		assert( latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" )
 
-		assert_not_nil thread_ids.first
+		assert( latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" )
 		assert_not_equal Thread.current.object_id, thread_ids.first
 
 	end
 
-	def test_non_mailslot_functions_become_private
+	def test_non_mailslot_methods_become_private
 
 		klass = Class.new do 
 			include Mailbox
 
 			def bar
-				puts "This shouldn't print"
 			end
 		end
 
-		foo = assert_raise NoMethodError do
+		exception = assert_raise NoMethodError do
 			klass.new.bar
 		end
- 		assert_match /private method `bar'/, foo.message
+		
+ 		assert_match /private method `bar'/, exception.message
 	end
+	
+	def test_should_supports_channels
+
+		klass = Class.new do
+			include Mailbox
+			
+			def initialize(channel)
+		    channels.register :test_channel, channel
+		  end
+
+			mailslot :channel => :test_channel
+			def test_method(latch)
+				latch.count_down
+			end
+		end
+	  
+		thread_ids = []
+		latch = Latches::CountDownLatch.new 1
+		a_channel = JRL::Channel.new
+	
+		klass.new(a_channel)
+    a_channel.publish latch
+	
+		assert latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" 
+
+  end
 
 end
