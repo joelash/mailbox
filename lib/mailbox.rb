@@ -22,11 +22,6 @@ module Mailbox
 
 			@adding_mailbox_to_method = method_name
 
-#			define_method( method_name, lambda do |*args| 
-#				p "sending #{__fiber__}"
-#			 	self.send(:"__#{method_name}__", *args)
-#			end )
-
  			define_method( method_name, lambda do |*args| 
  				__fiber__.execute { self.send(:"__#{method_name}__", *args ) }  
  			end )

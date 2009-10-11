@@ -15,19 +15,19 @@ class MailboxTest < Test::Unit::TestCase
 			include Mailbox
 
 			mailslot
-			def test_method(latch, pid)
-				pid << Thread.current.object_id
+			def test_method(latch, thread_ids)
+				thread_ids << Thread.current.object_id
 				latch.count_down
 			end
 		end
 
-		execution_pid = []
+		thread_ids = []
 		latch = Latches::CountDownLatch.new( 1 )
-		klass.new.test_method(latch, execution_pid)
+		klass.new.test_method(latch, thread_ids)
 		assert( latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" )
 
-		assert_not_nil execution_pid
-		assert_not_equal Thread.current.object_id, execution_pid
+		assert_not_nil thread_ids.first
+		assert_not_equal Thread.current.object_id, thread_ids.first
 
 	end
 
