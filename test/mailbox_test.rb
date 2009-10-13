@@ -52,7 +52,7 @@ class MailboxTest < Test::Unit::TestCase
 			include Mailbox
 			
 			def initialize(channel)
-		    channels.register :test_channel, channel
+ 		    register_channel :test_channel, channel
 		  end
 
 			mailslot :channel => :test_channel
