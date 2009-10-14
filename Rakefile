@@ -17,5 +17,13 @@ Jeweler::Tasks.new do |gemspec|
 	gemspec.email = "asher.friedman@gmail.com"
 	gemspec.homepage = "http://joelash.github.com/mailbox"
 	gemspec.authors = ["Joel Friedman", "Patrick Farley"]
+#	gemspec.requirements << 'jretlang'
+#	gemspec.add_dependency "jrlbm"
+
+	gemspec.rubyforge_project = "mailbox"
+end
+
+Jeweler::RubyforgeTasks.new do |rubyforge|
+	rubyforge.doc_task = "rdoc"
 end
 
