@@ -1,15 +1,26 @@
 require 'rubygems'
 require 'jretlang'
 
+# Author:: Joel Friedman and Patrick Farley
+
+# This module is used to simplify the using concurrency
+# in your application. Using JVM threads as the backing
+# a function can set to become an asynchronous function
+# to be used in a actor-model method. Or a function
+# can be set to be the backing of a named channel 
+# (jretlang channels are used here). 
 module Mailbox
 
-  def self.included(base)
-    base.extend(Mailbox::ClassMethods)
-  end
-
+  # Register your jretlang channel as a named channel
   def register_channel(channel_name, channel)
     channel_registry = self.class.__channel_registry__
     channel_registry.each_pair { |key, value| __subscribe__(channel, key) if value == channel_name }
+  end
+
+  private 
+
+  def self.included(base)
+    base.extend(Mailbox::ClassMethods)
   end
 
   def __subscribe__(channel, method)
@@ -30,10 +41,15 @@ module Mailbox
 
     attr_accessor :__channel_registry__
 
+    # Notifies Mailbox that the next method added
+    # will be a 'mailslot'. If :channel is provided
+    # then it'll become a subscriber on that channel
     def mailslot(params={})
       @next_channel_name = params[:channel]
       @mailslot = true
     end
+
+    private
 
     def method_added(method_name, &block)
       return if @adding_mailbox_to_method == method_name

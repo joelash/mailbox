@@ -1,5 +1,6 @@
 require "rubygems"
 require "rake/testtask"
+require "rake/rdoctask"
 require "jeweler"
 
 task :default => :test
@@ -25,5 +26,10 @@ end
 
 Jeweler::RubyforgeTasks.new do |rubyforge|
   rubyforge.doc_task = "rdoc"
+end
+
+Rake::RDocTask.new do |rdoc|
+  rdoc.main = "README"
+  rdoc.rdoc_files.include("README", "lib/**/*.rb")
 end
 
