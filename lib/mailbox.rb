@@ -5,8 +5,8 @@ require 'jretlang'
 
 # This module is used to simplify the using concurrency
 # in your application. Using JVM threads as the backing
-# a function can set to become an asynchronous function
-# to be used in a actor-model method. Or a function
+# a method can set to become an asynchronous method
+# to be used in a actor-model method. Or a method
 # can be set to be the backing of a named channel 
 # (jretlang channels are used here). 
 module Mailbox
@@ -54,10 +54,7 @@ module Mailbox
     def method_added(method_name, &block)
       return if @adding_mailbox_to_method == method_name
 
-      unless @mailslot == true
-        private method_name
-        return
-      end
+      return unless @mailslot == true
 
       @mailslot = false
 
