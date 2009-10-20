@@ -54,10 +54,7 @@ module Mailbox
     def method_added(method_name, &block)
       return if @adding_mailbox_to_method == method_name
 
-      unless @mailslot == true
-        private method_name
-        return
-      end
+      return unless @mailslot == true
 
       @mailslot = false
 
