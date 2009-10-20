@@ -30,20 +30,18 @@ class MailboxTest < Test::Unit::TestCase
 
   end
 
-  def test_non_mailslot_methods_become_private
+  def test_non_mailslot_methods_stay_public
 
     klass = Class.new do 
       include Mailbox
 
       def bar
+        "foo"
       end
     end
 
-    exception = assert_raise NoMethodError do
-      klass.new.bar
-    end
+    assert "foo", klass.new.bar
 
-    assert_match /private method `bar'/, exception.message
   end
 
   def test_should_supports_channels
