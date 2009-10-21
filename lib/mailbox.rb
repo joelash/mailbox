@@ -37,6 +37,10 @@ module Mailbox
     @fiber ||= __started_fiber__
   end 
 
+  def __mutex__
+    @mutex ||= Mutex.new
+  end
+
   module ClassMethods
 
     attr_accessor :__channel_registry__
@@ -49,33 +53,52 @@ module Mailbox
       @mailslot = true
     end
 
+    def synchronized
+      @synchronized = true
+    end
+
     private
 
     def method_added(method_name, &block)
       return if @adding_mailbox_to_method == method_name
 
-      return unless @mailslot == true
+      return unless @mailslot == true || @synchronized == true
 
       @mailslot = false
 
-      if @next_channel_name.nil?
+      if @synchronized == true
+        __synchronize__(method_name)
+      elsif @next_channel_name.nil?
         __setup_on_fiber__(method_name)
       else
         __setup_on_channel__(method_name)
       end
 
+      @adding_mailbox_to_method = nil
+
+    end
+
+    def __do_setup__(method_name)
+      alias_method :"__#{method_name}__", method_name
+      @adding_mailbox_to_method = method_name
+    end
+
+    def __synchronize__(method_name)
+      @synchronized = false
+      __do_setup__(method_name)
+
+      define_method( method_name, lambda do |*args| 
+        __mutex__.synchronize { self.send(:"__#{method_name}__", *args ) }  
+      end )
     end
 
     def __setup_on_fiber__(method_name)
-      alias_method :"__#{method_name}__", method_name
-
-      @adding_mailbox_to_method = method_name
+      __do_setup__(method_name)
 
       define_method( method_name, lambda do |*args| 
         __fiber__.execute { self.send(:"__#{method_name}__", *args ) }  
       end )
 
-      @adding_mailbox_to_method = nil
     end
 
     def __setup_on_channel__(method_name)
