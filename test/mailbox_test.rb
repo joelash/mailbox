@@ -101,7 +101,6 @@ class MailboxTest < Test::Unit::TestCase
       clazz.test_method "thread 2"
     end
 
-#   Thread.pass
     thread_1.join 1
     thread_2.join 1
 

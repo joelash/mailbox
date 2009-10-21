@@ -53,6 +53,12 @@ module Mailbox
       @mailslot = true
     end
 
+    # Notified Mailbox that the next method added
+    # will be 'synchronized'. This guarentees 1)
+    # Two invocations of this method will not
+    # interleave and 2) a happens-before relationship
+    # is established with any subsequent invocation.
+    # http://java.sun.com/docs/books/tutorial/essential/concurrency/syncmeth.html
     def synchronized
       @synchronized = true
     end
@@ -78,14 +84,14 @@ module Mailbox
 
     end
 
-    def __do_setup__(method_name)
+    def __alias_method__(method_name)
       alias_method :"__#{method_name}__", method_name
       @adding_mailbox_to_method = method_name
     end
 
     def __synchronize__(method_name)
       @synchronized = false
-      __do_setup__(method_name)
+      __alias_method__(method_name)
 
       define_method( method_name, lambda do |*args| 
         __mutex__.synchronize { self.send(:"__#{method_name}__", *args ) }  
@@ -93,7 +99,7 @@ module Mailbox
     end
 
     def __setup_on_fiber__(method_name)
-      __do_setup__(method_name)
+      __alias_method__(method_name)
 
       define_method( method_name, lambda do |*args| 
         __fiber__.execute { self.send(:"__#{method_name}__", *args ) }  
