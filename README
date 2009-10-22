@@ -1,7 +1,10 @@
 == About Mailbox
 
-Mailbox is a JRuby module that simplifies the creation of Actor-Model functions that are backed by JVM threads.
-"Unobtrusive concurrency for a multicore world" - pgfarley
+"Unobtrusive concurrency for a multicore world"
+
+Mailbox is a JRuby mixin that simplifies JVM thread backed message passing concurrency.
+
+Mailbox is Alpha software under active development.  Future releases may include backward compatibility breaking changes.
 
 * jretlang gem is required to use mailbox
 
