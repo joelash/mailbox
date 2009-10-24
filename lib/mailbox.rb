@@ -17,6 +17,14 @@ module Mailbox
     channel_registry.each_pair { |key, value| __subscribe__(channel, key) if value == channel_name }
   end
 
+  class << self
+    # Used to tell +Mailbox+ that all +mailslot+ 
+    # methods should be run on the calling thread.
+    #
+    # <b>*** Should only be used for testing ***</b>
+    attr_accessor :synchronous
+  end
+
   private 
 
   def self.included(base)
@@ -27,8 +35,13 @@ module Mailbox
     channel.subscribe_on_fiber(__fiber__) { |*args| self.send(method, *args) }
   end
 
+  def __synchronous_fiber__
+    executor = JRL::SynchronousDisposingExecutor.new
+    fiber = JRL::Fibers::ThreadFiber.new executor, "synchronous_thread", true
+  end
+
   def __started_fiber__
-    fiber = JRL::Fiber.new
+    fiber = Mailbox.synchronous == true ? __synchronous_fiber__ : JRL::Fiber.new
     fiber.start
     fiber
   end
@@ -46,15 +59,15 @@ module Mailbox
     attr_accessor :__channel_registry__
 
     # Notifies Mailbox that the next method added
-    # will be a 'mailslot'. If :channel is provided
+    # will be a +mailslot+. If <tt>:channel</tt> is provided
     # then it'll become a subscriber on that channel
     def mailslot(params={})
       @next_channel_name = params[:channel]
       @mailslot = true
     end
 
-    # Notified Mailbox that the next method added
-    # will be 'synchronized'. This guarentees 1)
+    # Notified +Mailbox+ that the next method added
+    # will be +synchronized+. This guarentees 1)
     # Two invocations of this method will not
     # interleave and 2) a happens-before relationship
     # is established with any subsequent invocation.

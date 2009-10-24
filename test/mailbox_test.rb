@@ -44,6 +44,32 @@ class MailboxTest < Test::Unit::TestCase
 
   end
 
+  def test_default_is_run_asynchronously
+    assert Mailbox.synchronous == false, "Mailbox is defaulting to synchronous execution"
+  end
+
+  def test_can_set_mailslot_to_run_synchronously
+    begin
+      Mailbox.synchronous = true
+      klass = Class.new do
+        include Mailbox
+
+        mailslot
+        def test_method(thread_ids)
+          thread_ids << Thread.current.object_id
+        end
+
+      end
+
+      thread_ids = []
+      klass.new.test_method(thread_ids)
+      assert_equal Thread.current.object_id, thread_ids[0]
+    ensure
+      Mailbox.synchronous = false;
+    end
+
+  end
+
   def test_should_supports_channels
 
     klass = Class.new do
