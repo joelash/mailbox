@@ -15,32 +15,18 @@ class MailboxTest < Test::Unit::TestCase
       include Mailbox
 
       mailslot
-      def test_method(latch, thread_ids)
-        thread_ids << Thread.current.object_id
+      def test_method(latch, thread_info)
+        thread_info[:thread_id] = Thread.current.object_id
         latch.count_down
       end
     end
 
-    thread_ids = []
+    thread_info = {}
     latch = Latches::CountDownLatch.new( 1 )
-    klass.new.test_method(latch, thread_ids)
+    klass.new.test_method(latch, thread_info)
 
     assert( latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" )
-    assert_not_equal Thread.current.object_id, thread_ids.first
-
-  end
-
-  def test_non_mailslot_methods_stay_public
-
-    klass = Class.new do 
-      include Mailbox
-
-      def bar
-        "foo"
-      end
-    end
-
-    assert "foo", klass.new.bar
+    assert_not_equal Thread.current.object_id, thread_info[:thread_id]
 
   end
 
@@ -55,15 +41,15 @@ class MailboxTest < Test::Unit::TestCase
         include Mailbox
 
         mailslot
-        def test_method(thread_ids)
-          thread_ids << Thread.current.object_id
+        def test_method(thread_info)
+          thread_info[:thread_id] = Thread.current.object_id
         end
 
       end
 
-      thread_ids = []
-      klass.new.test_method(thread_ids)
-      assert_equal Thread.current.object_id, thread_ids[0]
+      thread_info = {}
+      klass.new.test_method(thread_info)
+      assert_equal Thread.current.object_id, thread_info[:thread_id]
     ensure
       Mailbox.synchronous = false;
     end
@@ -80,11 +66,13 @@ class MailboxTest < Test::Unit::TestCase
       end
 
       mailslot :channel => :test_channel
-      def test_method(latch)
+      def test_method(latch, thread_info)
+        thread_info[:thread_id] = Thread.current.object_id
         latch.count_down
       end
     end
 
+    thread_info = {}
     latch = Latches::CountDownLatch.new 1
     a_channel = JRL::Channel.new
 
@@ -92,6 +80,7 @@ class MailboxTest < Test::Unit::TestCase
     a_channel.publish latch
 
     assert latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" 
+    assert_not_equal Thread.current.object_id, thread_info[:thread_id]
 
   end
 

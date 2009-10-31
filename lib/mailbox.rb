@@ -3,12 +3,12 @@ require 'jretlang'
 
 # Author:: Joel Friedman and Patrick Farley
 
-# This module is used to simplify the using concurrency
-# in your application. Using JVM threads as the backing
-# a method can set to become an asynchronous method
-# to be used in a actor-model method. Or a method
-# can be set to be the backing of a named channel 
-# (jretlang channels are used here). 
+# This module is used to simplify concurrency
+# in your application. JVM threads and JRetlang are
+# used to provide Actor model style asynchronous
+# message passing via method calls.  Named channel based
+# message passing is also supported via register_channel and
+# the :channel parameter on mailslot.
 module Mailbox
 
   # Register your jretlang channel as a named channel
@@ -21,7 +21,7 @@ module Mailbox
     # Used to tell +Mailbox+ that all +mailslot+ 
     # methods should be run on the calling thread.
     #
-    # <b>*** Should only be used for testing ***</b>
+    # <b>*** Intended for synchronus uint testing of concurrent apps***</b>
     attr_accessor :synchronous
   end
 
@@ -60,13 +60,15 @@ module Mailbox
 
     # Notifies Mailbox that the next method added
     # will be a +mailslot+. If <tt>:channel</tt> is provided
-    # then it'll become a subscriber on that channel
+    # the next method will become a subscriber on the channel.
+    # Channel based mailslot methods are also made private
+    # to discourage direct invocation
     def mailslot(params={})
       @next_channel_name = params[:channel]
       @mailslot = true
     end
 
-    # Notified +Mailbox+ that the next method added
+    # Notify +Mailbox+ that the next method added
     # will be +synchronized+. This guarentees 1)
     # Two invocations of this method will not
     # interleave and 2) a happens-before relationship
@@ -79,7 +81,7 @@ module Mailbox
     private
 
     def method_added(method_name, &block)
-      return if @adding_mailbox_to_method == method_name
+      return if @is_adding_mailbox_to_method
 
       return unless @mailslot == true || @synchronized == true
 
@@ -93,13 +95,13 @@ module Mailbox
         __setup_on_channel__(method_name)
       end
 
-      @adding_mailbox_to_method = nil
+      @is_adding_mailbox_to_method = false
 
     end
 
     def __alias_method__(method_name)
       alias_method :"__#{method_name}__", method_name
-      @adding_mailbox_to_method = method_name
+      @is_adding_mailbox_to_method = true
     end
 
     def __synchronize__(method_name)
