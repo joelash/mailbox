@@ -18,6 +18,7 @@ class ParallelEachExample < Test::Unit::TestCase
   def test_a_simple_parallel_each
 
     items = ["item1", "item2", "item3", "item4", "item5"]
+
     processors = [DataProcessor.new, DataProcessor.new, DataProcessor.new]
 
     items.each_with_index do |item, index|

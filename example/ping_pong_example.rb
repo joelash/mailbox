@@ -25,8 +25,10 @@ class PingPongExample < Test::Unit::TestCase
   def test_ping_pong
     ping_channel = JRL::Channel.new
     pong_channel = JRL::Channel.new
+
     pinger = Player.new "ping", ping_channel, pong_channel
     ponger = Player.new "pong", pong_channel, ping_channel
+
     ping_channel.publish "ping"
     sleep 0.001
   end
