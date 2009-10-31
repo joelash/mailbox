@@ -66,9 +66,9 @@ class MailboxTest < Test::Unit::TestCase
       end
 
       mailslot :channel => :test_channel
-      def test_method(latch, thread_info)
-        thread_info[:thread_id] = Thread.current.object_id
-        latch.count_down
+      def test_method(message)
+        message[:thread_info][:thread_id] = Thread.current.object_id
+        message[:latch].count_down
       end
     end
 
@@ -77,7 +77,7 @@ class MailboxTest < Test::Unit::TestCase
     a_channel = JRL::Channel.new
 
     klass.new(a_channel)
-    a_channel.publish latch
+    a_channel.publish :latch => latch, :thread_info => thread_info
 
     assert latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" 
     assert_not_equal Thread.current.object_id, thread_info[:thread_id]
