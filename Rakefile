@@ -11,6 +11,12 @@ Rake::TestTask.new do |t|
   t.verbose = true
 end
 
+Rake::TestTask.new("example") do |t|
+  t.libs << "example"
+  t.test_files = FileList['example/**/*_example.rb']
+  t.verbose = true
+end
+
 Jeweler::Tasks.new do |gemspec|
   gemspec.name = "mailbox"
   gemspec.summary = "Mailbox is a JRuby module that simplifies concurrency and is backed by JVM threads."
