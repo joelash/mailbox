@@ -21,7 +21,7 @@ module Mailbox
     # Used to tell +Mailbox+ that all +mailslot+ 
     # methods should be run on the calling thread.
     #
-    # <b>*** Intended for synchronus uint testing of concurrent apps***</b>
+    # <b>*** Intended for synchronus unit testing of concurrent apps***</b>
     attr_accessor :synchronous
   end
 
