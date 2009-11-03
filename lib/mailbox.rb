@@ -14,7 +14,9 @@ module Mailbox
   # Register your jretlang channel as a named channel
   def register_channel(channel_name, channel)
     channel_registry = self.class.__channel_registry__
-    channel_registry.each_pair { |key, value| __subscribe__(channel, key) if value == channel_name }
+    channel_registry.select { |k,v| v[:channel] == channel_name }.each do |k,v|
+      v[:replyable] ? __subscribe_with_single_reply__(channel, k) : __subscribe__(channel, k)
+    end
   end
 
   class << self
@@ -25,7 +27,7 @@ module Mailbox
     attr_accessor :synchronous
   end
 
-  private 
+  private
 
   def self.included(base)
     base.extend(Mailbox::ClassMethods)
@@ -35,20 +37,26 @@ module Mailbox
     channel.subscribe_on_fiber(__fiber__) { |*args| self.send(method, *args) }
   end
 
+  def __subscribe_with_single_reply__(channel, method)
+    channel.subscribe(__fiber__) do |message|
+      message.reply(self.send(method))
+    end
+  end
+
   def __synchronous_fiber__
     executor = JRL::SynchronousDisposingExecutor.new
     fiber = JRL::Fibers::ThreadFiber.new executor, "synchronous_thread", true
   end
 
   def __started_fiber__
-    fiber = Mailbox.synchronous == true ? __synchronous_fiber__ : JRL::Fiber.new
+    fiber = Mailbox.synchronous == true ? __synchronous_fiber__ : org.jetlang.fibers.ThreadFiber.new
     fiber.start
     fiber
   end
 
   def __fiber__
     @fiber ||= __started_fiber__
-  end 
+  end
 
   def __mutex__
     @mutex ||= Mutex.new
@@ -56,7 +64,7 @@ module Mailbox
 
   module ClassMethods
 
-    attr_accessor :__channel_registry__
+    attr_accessor :__channel_registry__, :__request_channel_registry__
 
     # Notifies Mailbox that the next method added
     # will be a +mailslot+. If <tt>:channel</tt> is provided
@@ -65,6 +73,7 @@ module Mailbox
     # to discourage direct invocation
     def mailslot(params={})
       @next_channel_name = params[:channel]
+      @replyable = params[:replyable]
       @mailslot = true
     end
 
@@ -92,7 +101,7 @@ module Mailbox
       elsif @next_channel_name.nil?
         __setup_on_fiber__(method_name)
       else
-        __setup_on_channel__(method_name)
+        __setup_on_channel__(method_name, @replyable)
       end
 
       @is_adding_mailbox_to_method = false
@@ -108,28 +117,29 @@ module Mailbox
       @synchronized = false
       __alias_method__(method_name)
 
-      define_method( method_name, lambda do |*args| 
-        __mutex__.synchronize { self.send(:"__#{method_name}__", *args ) }  
+      define_method( method_name, lambda do |*args|
+        __mutex__.synchronize { self.send(:"__#{method_name}__", *args ) }
       end )
     end
 
     def __setup_on_fiber__(method_name)
       __alias_method__(method_name)
 
-      define_method( method_name, lambda do |*args| 
-        __fiber__.execute { self.send(:"__#{method_name}__", *args ) }  
+      define_method( method_name, lambda do |*args|
+        __fiber__.execute { self.send(:"__#{method_name}__", *args ) }
       end )
 
     end
 
-    def __setup_on_channel__(method_name)
+    def __setup_on_channel__(method_name, replyable)
       private method_name
       @__channel_registry__ ||= {}
-      __channel_registry__[method_name] = @next_channel_name
+      __channel_registry__[method_name] = { :channel => @next_channel_name, :replyable => replyable } 
+      @replyable = nil
       @next_channel_name = nil
     end
 
-  end 
+  end
 
 end
 
