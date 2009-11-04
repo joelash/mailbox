@@ -2,3 +2,4 @@ pkg/*
 rdoc/*
 **/*.swp
 mailbox.iws
+.rakeTasks
