@@ -1,16 +1,17 @@
+# Author:: Joel Friedman and Patrick Farley
+#
+# This module is used to simplify concurrency
+# in your application. JVM threads and JRetlang are
+# used to provide Actor model style asynchronous
+# message passing via method calls.  Named channel based
+# message passing is also supported via +register_channel+ and
+# the <tt>:channel</tt> parameter on +mailslot+.
+
 require 'rubygems'
 require 'jretlang'
 
 require File.dirname(__FILE__) + '/synchronized'
 
-# Author:: Joel Friedman and Patrick Farley
-
-# This module is used to simplify concurrency
-# in your application. JVM threads and JRetlang are
-# used to provide Actor model style asynchronous
-# message passing via method calls.  Named channel based
-# message passing is also supported via register_channel and
-# the :channel parameter on mailslot.
 module Mailbox
   include Synchronized
 
@@ -64,12 +65,13 @@ module Mailbox
   module ClassMethods 
     include Synchronized::ClassMethods
   
-    attr_accessor :__channel_registry__, :__request_channel_registry__
+    # Used within +Mailbox+ module
+    attr_accessor :__channel_registry__ 
 
     # Notifies Mailbox that the next method added
     # will be a +mailslot+. If <tt>:channel</tt> is provided
     # the next method will become a subscriber on the channel.
-    # Channel based mailslot methods are also made private
+    # Channel based +mailslot+ methods are also made private
     # to discourage direct invocation
     def mailslot(params={})
       @next_channel_name = params[:channel]

@@ -18,10 +18,11 @@ module Synchronized
   module ClassMethods
     
     # Notify +Mailbox+ that the next method added
-    # will be +synchronized+. This guarentees 1)
-    # Two invocations of this method will not
-    # interleave and 2) a happens-before relationship
-    # is established with any subsequent invocation.
+    # will be +synchronized+. 
+    #
+    # This guarentees:
+    #     1. Two invocations of this method will not interleave and 
+    #     2. a happens-before relationship is established with any subsequent invocation.
     # http://java.sun.com/docs/books/tutorial/essential/concurrency/syncmeth.html
     def synchronized
       @synchronized = true
