@@ -2,8 +2,6 @@ require 'test_helper.rb'
 
 class MailboxTest < Test::Unit::TestCase
 
-  import org.jetlang.channels.MemoryRequestChannel
-
   def test_mailslot_causes_execution_on_separate_thread
 
     klass = Class.new do
@@ -96,14 +94,14 @@ class MailboxTest < Test::Unit::TestCase
 
     thread_info = {}
     latch = Latches::CountDownLatch.new 1
-    request_channel = MemoryRequestChannel.new
+    request_channel = JRL::Channels::MemoryRequestChannel.new
 
     klass.new(request_channel)
-    fiber = org.jetlang.fibers.ThreadFiber.new
+    fiber = JRL::Fibers::ThreadFiber.new
     fiber.start
 
     response = "no response"
-    org.jetlang.channels.AsyncRequest.with_one_reply(fiber, request_channel, "orly?") do |message|
+    JRL::Channels::AsyncRequest.with_one_reply(fiber, request_channel, "orly?") do |message|
       response = message
       latch.count_down
     end

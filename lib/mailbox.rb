@@ -52,7 +52,7 @@ module Mailbox
   end
 
   def __started_fiber__
-    fiber = Mailbox.synchronous == true ? __synchronous_fiber__ : org.jetlang.fibers.ThreadFiber.new
+    fiber = Mailbox.synchronous == true ? __synchronous_fiber__ : JRL::Fibers::ThreadFiber.new
     fiber.start
     fiber
   end
