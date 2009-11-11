@@ -31,7 +31,7 @@ module Synchronized
     private
     
     def method_added(method_name, &block)
-      return super unless @synchronized == true
+      return super unless __synchronized__ == true
       @synchronized = false
       __synchronize__(method_name)
       super
@@ -39,7 +39,7 @@ module Synchronized
     
     
     def __synchronize__(method_name)
-      return super if @is_adding_synchronized_to_method 
+      return super if __is_adding_synchronized_to_method__
       
       alias_method :"__#{method_name}__", method_name
       @is_adding_synchronized_to_method = true
@@ -50,6 +50,14 @@ module Synchronized
       end )
       
       @is_adding_synchronized_to_method = false
+    end
+    
+    def __synchronized__
+      @synchronized ||= false
+    end
+
+    def __is_adding_synchronized_to_method__
+      @is_adding_synchronized_to_method ||= false
     end
     
   end

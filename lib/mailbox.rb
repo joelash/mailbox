@@ -27,12 +27,12 @@ module Mailbox
     # Used to tell +Mailbox+ that all +mailslot+ 
     # methods should be run on the calling thread.
     #
-    # <b>*** Intended for synchronus unit testing of concurrent apps***</b>
+    # <b>*** Intended for synchronous unit testing of concurrent apps***</b>
     attr_accessor :synchronous
   end
 
   private
-
+  
   def self.included(base)
     base.extend(Mailbox::ClassMethods)
   end
@@ -61,10 +61,10 @@ module Mailbox
   def __fiber__
     @fiber ||= __started_fiber__
   end
-  
+
   module ClassMethods 
     include Synchronized::ClassMethods
-  
+      
     # Used within +Mailbox+ module
     attr_accessor :__channel_registry__ 
 
@@ -78,11 +78,11 @@ module Mailbox
       @replyable = params[:replyable]
       @mailslot = true
     end
-
+    
     private
-
+    
     def method_added(method_name, &block)
-      return super unless @mailslot == true
+      return super unless __mailslot__ == true
       @mailslot = false
 
       if @next_channel_name.nil?
@@ -96,7 +96,7 @@ module Mailbox
     end
 
     def __setup_on_fiber__(method_name)
-      return super if @is_adding_mailbox_to_method
+      return super if __is_adding_mailbox_to_method__
     
       alias_method :"__#{method_name}__", method_name
       @is_adding_mailbox_to_method = true
@@ -115,8 +115,15 @@ module Mailbox
       @replyable = nil
       @next_channel_name = nil
     end
+    
+    def __mailslot__
+      @mailslot ||= false
+    end
+  
+    def __is_adding_mailbox_to_method__
+      @is_adding_mailbox_to_method ||= false
+    end
 
   end
 
 end
-
