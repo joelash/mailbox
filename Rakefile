@@ -29,8 +29,12 @@ Jeweler::Tasks.new do |gemspec|
 
   gemspec.add_dependency "jretlang"
 
+  gemspec.add_development_dependency "jeweler"
+
   gemspec.rubyforge_project = "mailbox"
 end
+
+Jeweler::GemcutterTasks.new
 
 Jeweler::RubyforgeTasks.new do |rubyforge|
   rubyforge.doc_task = "rdoc"
