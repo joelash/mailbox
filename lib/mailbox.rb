@@ -48,11 +48,11 @@ module Mailbox
 
   def __synchronous_fiber__
     executor = JRL::SynchronousDisposingExecutor.new
-    fiber = JRL::Fibers::ThreadFiber.new executor, "#{self.class.name} Mailbox synchronous", true
+    fiber = JRL::Fibers::ThreadFiber.new executor, "#{self.class.name} #{self.object_id} Mailbox synchronous", true
   end
 
   def __create_fiber__
-    JRL::Fibers::ThreadFiber.new( JRL::RunnableExecutorImpl.new, "#{self.class.name} Mailbox", true )
+    JRL::Fibers::ThreadFiber.new( JRL::RunnableExecutorImpl.new, "#{self.class.name} #{self.object_id} Mailbox", true )
   end
 
   def __started_fiber__
