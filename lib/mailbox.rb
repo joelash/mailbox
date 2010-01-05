@@ -32,7 +32,6 @@ module Mailbox
   end
 
   private
-  
   def self.included(base)
     base.extend(Mailbox::ClassMethods)
   end
@@ -49,11 +48,15 @@ module Mailbox
 
   def __synchronous_fiber__
     executor = JRL::SynchronousDisposingExecutor.new
-    fiber = JRL::Fibers::ThreadFiber.new executor, "synchronous_thread", true
+    fiber = JRL::Fibers::ThreadFiber.new executor, "#{self.class.name} Mailbox synchronous", true
+  end
+
+  def __create_fiber__
+    JRL::Fibers::ThreadFiber.new( JRL::RunnableExecutorImpl.new, "#{self.class.name} Mailbox", true )
   end
 
   def __started_fiber__
-    fiber = Mailbox.synchronous == true ? __synchronous_fiber__ : JRL::Fibers::ThreadFiber.new
+    fiber = Mailbox.synchronous == true ? __synchronous_fiber__ : __create_fiber__
     fiber.start
     fiber
   end
@@ -64,7 +67,7 @@ module Mailbox
 
   module ClassMethods 
     include Synchronized::ClassMethods
-      
+
     # Used within +Mailbox+ module
     attr_accessor :__channel_registry__ 
 
