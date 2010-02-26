@@ -20,7 +20,34 @@ class MailboxTest < Test::Unit::TestCase
 
     assert( latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" )
     assert_not_equal JThread.current_thread.name, thread_info[:name]
+  end
 
+  def test_can_set_mailslot_to_callback_on_exception
+    klass = Class.new do
+      include Mailbox
+
+      attr_accessor :ex
+
+      def initialize(latch)
+        @latch = latch
+      end
+
+      mailslot :exception => :handle_exception
+      def test_method
+        raise "test exception"
+      end
+
+      def handle_exception(ex)
+        @ex = ex
+        @latch.count_down
+      end
+    end
+
+    latch = Latches::CountDownLatch.new( 1 )
+    clazz = klass.new(latch)
+    clazz.test_method
+    assert( latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" )
+    assert_equal "test exception", clazz.ex.message
   end
 
   def test_default_is_run_asynchronously
@@ -46,7 +73,6 @@ class MailboxTest < Test::Unit::TestCase
     ensure
       Mailbox.synchronous = false;
     end
-
   end
 
   def test_should_support_channels

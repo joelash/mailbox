@@ -75,10 +75,14 @@ module Mailbox
     # will be a +mailslot+. If <tt>:channel</tt> is provided
     # the next method will become a subscriber on the channel.
     # Channel based +mailslot+ methods are also made private
-    # to discourage direct invocation
+    # to discourage direct invocation. <tt>:exception</tt>
+    # can be provided as the symbol for a method to handle
+    # any exceptions that occur in your +mailslot+. This
+    # method will be passed the exception that was raised
     def mailslot(params={})
       @next_channel_name = params[:channel]
       @replyable = params[:replyable]
+      @exception = params[:exception]
       @mailslot = true
     end
     
@@ -104,8 +108,16 @@ module Mailbox
       alias_method :"__#{method_name}__", method_name
       @is_adding_mailbox_to_method = true
 
+      exception_method, @exception = @exception, nil
       define_method( method_name, lambda do |*args|
-        __fiber__.execute { self.send(:"__#{method_name}__", *args ) }
+        __fiber__.execute do 
+          begin
+            self.send(:"__#{method_name}__", *args ) 
+          rescue Exception => ex
+            raise if exception_method.nil?
+            self.send(:"#{exception_method}", ex)
+          end
+        end
       end )
 
       @is_adding_mailbox_to_method = false
