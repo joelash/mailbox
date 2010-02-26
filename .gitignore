@@ -3,3 +3,5 @@ rdoc/*
 **/*.swp
 mailbox.iws
 .rakeTasks
+TAGS
+run_tags.rb
