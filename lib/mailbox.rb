@@ -93,7 +93,7 @@ module Mailbox
       @mailslot = false
 
       if @next_channel_name.nil?
-        __setup_on_fiber__(method_name)
+        __setup_on_fiber__(method_name, @replyable)
       else
         __setup_on_channel__(method_name, @replyable)
       end
@@ -102,25 +102,37 @@ module Mailbox
 
     end
 
-    def __setup_on_fiber__(method_name)
+    def __setup_on_fiber__(method_name, replyable)
       return super if __is_adding_mailbox_to_method__
     
       alias_method :"__#{method_name}__", method_name
       @is_adding_mailbox_to_method = true
 
       exception_method, @exception = @exception, nil
-      define_method( method_name, lambda do |*args|
+      define_method method_name do |*args|
+        
+        result = nil
+        latch = JRL::Concurrent::CountDownLatch.new(1) if replyable
+        
         __fiber__.execute do 
           begin
-            self.send(:"__#{method_name}__", *args ) 
+            result = self.send(:"__#{method_name}__", *args ) 
           rescue Exception => ex
             raise if exception_method.nil?
             self.send(:"#{exception_method}", ex)
+          ensure
+            latch.count_down if replyable
           end
         end
-      end )
-
+      
+        latch.await if replyable
+        return result
+      
+      end 
+      
+      @replyable = false
       @is_adding_mailbox_to_method = false
+    
     end
 
     def __setup_on_channel__(method_name, replyable)

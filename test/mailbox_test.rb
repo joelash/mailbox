@@ -134,4 +134,20 @@ class MailboxTest < Test::Unit::TestCase
     assert latch.await(1, Latches::TimeUnit::SECONDS), "timed out"
     assert_equal "ya_rly!", response
   end
+
+  def test_should_support_replayble_messages
+  
+    klass = Class.new do
+      include Mailbox
+
+      mailslot :replyable => true
+      def test_method
+        "response"
+      end
+    end
+  
+    assert_equal "response", klass.new.test_method
+
+  end
+
 end
