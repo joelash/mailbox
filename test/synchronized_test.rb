@@ -1,4 +1,4 @@
-require 'test_helper.rb'
+require File.dirname(__FILE__) + '/test_helper.rb'
 
 class SynchronizedTest < Test::Unit::TestCase
   

@@ -142,11 +142,13 @@ class MailboxTest < Test::Unit::TestCase
 
       mailslot :replyable => true
       def test_method
-        "response"
+        ["response", JThread.current_thread.name]
       end
     end
   
-    assert_equal "response", klass.new.test_method
+    response, name = klass.new.test_method
+    assert_equal "response", response
+    assert_not_equal JThread.current_thread.name, name
 
   end
 
