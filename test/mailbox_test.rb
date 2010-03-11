@@ -37,7 +37,7 @@ class MailboxTest < Test::Unit::TestCase
 
     thread_info = {}
     latch = Latches::CountDownLatch.new 1
-    klass.new.test_class_method(latch, thread_info)
+    klass.test_class_method(latch, thread_info)
 
     assert latch.await(1), "Timed out"
     assert_not_equal JThread.current_thread.name
