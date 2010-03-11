@@ -22,6 +22,27 @@ class MailboxTest < Test::Unit::TestCase
     assert_not_equal JThread.current_thread.name, thread_info[:name]
   end
 
+  def test_mailslot_causes_execution_on_separate_thread_when_on_class_method
+    klass = Class.new do 
+      include Mailbox
+
+      class << self
+        mailslot
+        def test_class_method(latch, thread_info)
+          thread_info[:name] = JThread.current_thread.name
+          latch.count_down
+        end
+      end
+    end
+
+    thread_info = {}
+    latch = Latches::CountDownLatch.new 1
+    klass.new.test_class_method(latch, thread_info)
+
+    assert latch.await(1), "Timed out"
+    assert_not_equal JThread.current_thread.name
+  end
+
   def test_can_set_mailslot_to_callback_on_exception
     klass = Class.new do
       include Mailbox
