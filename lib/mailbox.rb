@@ -23,6 +23,10 @@ module Mailbox
     end
   end
 
+  def verbose_output_to method_name
+    @verbose_target = method_name
+  end
+
   class << self
     # Used to tell +Mailbox+ that all +mailslot+ 
     # methods should be run on the calling thread.
@@ -37,7 +41,9 @@ module Mailbox
   end
 
   def __subscribe__(channel, method)
-    channel.subscribe_on_fiber(__fiber__) { |*args| self.send(method, *args) }
+    channel.subscribe_on_fiber(__fiber__) do |*args|
+      self.send(method, *args)
+    end
   end
 
   def __subscribe_with_single_reply__(channel, method)
@@ -82,6 +88,7 @@ module Mailbox
     def mailslot(params={})
       @next_channel_name = params[:channel]
       @replyable = params[:replyable]
+      @timeout = params[:timeout].nil? ? -1 : params[:timeout] * 1000
       @exception = params[:exception]
       @mailslot = true
     end
@@ -93,7 +100,7 @@ module Mailbox
       @mailslot = false
 
       if @next_channel_name.nil?
-        __setup_on_fiber__(method_name, @replyable)
+        __setup_on_fiber__(method_name, @replyable, @timeout)
       else
         __setup_on_channel__(method_name, @replyable)
       end
@@ -102,7 +109,7 @@ module Mailbox
 
     end
 
-    def __setup_on_fiber__(method_name, replyable)
+    def __setup_on_fiber__(method_name, replyable, timeout)
       return super if __is_adding_mailbox_to_method__
     
       alias_method :"__#{method_name}__", method_name
@@ -110,13 +117,16 @@ module Mailbox
 
       exception_method, @exception = @exception, nil
       define_method method_name do |*args|
-        
+
+        self.send(@verbose_target, "enqueued #{method_name}") if defined? @verbose_target
+
         result = nil
         latch = JRL::Concurrent::CountDownLatch.new(1) if replyable
-        
-        __fiber__.execute do 
+
+        __fiber__.execute do
           begin
-            result = self.send(:"__#{method_name}__", *args ) 
+            self.send(@verbose_target, "dequeued #{method_name}") if defined? @verbose_target
+            result = self.send(:"__#{method_name}__", *args )
           rescue Exception => ex
             raise if exception_method.nil?
             self.send(:"#{exception_method}", ex)
@@ -124,8 +134,18 @@ module Mailbox
             latch.count_down if replyable
           end
         end
-      
-        latch.await if replyable
+
+        is_timeout = false
+        if replyable
+          if timeout == -1
+            latch.await
+          else
+            is_timeout = !(latch.await timeout, JRL::Concurrent::TimeUnit::MILLISECONDS)
+          end
+        end
+
+        raise Exception.new("#{method_name} message timeout after #{timeout/1000} seconds") if is_timeout
+
         return result
       
       end 

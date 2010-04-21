@@ -3,11 +3,8 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="JRuby SDK 1.3.1" jdkType="JRUBY_SDK" />
+    <orderEntry type="jdk" jdkName="JRuby SDK 1.4.0" jdkType="JRUBY_SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-  </component>
-  <component name="RModuleSettingsStorage">
-    <RMODULE_SETTINGS_STORAGE_ID NAME="NUMBER" VALUE="0" />
   </component>
 </module>
 
