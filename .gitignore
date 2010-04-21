@@ -4,4 +4,5 @@ rdoc/*
 mailbox.iws
 .rakeTasks
 TAGS
+tags
 run_tags.rb
