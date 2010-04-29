@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{mailbox}
-  s.version = "0.2.1"
+  s.version = "0.2.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Joel Friedman", "Patrick Farley"]
-  s.date = %q{2010-03-09}
+  s.date = %q{2010-04-29}
   s.description = %q{Mailbox is a JRuby module that simplifies concurrency and is backed by JVM threads.}
   s.email = %q{asher.friedman@gmail.com}
   s.extra_rdoc_files = [
@@ -25,6 +25,7 @@ Gem::Specification.new do |s|
      "example/log_example.rb",
      "example/parallel_each_example.rb",
      "example/ping_pong_example.rb",
+     "lib/daemon_thread_factory.rb",
      "lib/mailbox.rb",
      "lib/synchronized.rb",
      "mailbox.gemspec",
@@ -38,11 +39,11 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{mailbox}
-  s.rubygems_version = %q{1.3.6}
+  s.rubygems_version = %q{1.3.5}
   s.summary = %q{Mailbox is a JRuby module that simplifies concurrency and is backed by JVM threads.}
   s.test_files = [
-    "test/mailbox_test.rb",
-     "test/synchronized_test.rb",
+    "test/synchronized_test.rb",
+     "test/mailbox_test.rb",
      "test/test_helper.rb"
   ]
 

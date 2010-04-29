@@ -11,6 +11,7 @@ require 'rubygems'
 require 'jretlang'
 
 require File.dirname(__FILE__) + '/synchronized'
+require File.dirname(__FILE__) + '/daemon_thread_factory'
 
 module Mailbox
   include Synchronized
@@ -24,7 +25,7 @@ module Mailbox
   end
 
   def verbose_output_to method_name
-    @verbose_target = method_name
+    @__verbose_target__ = method_name
   end
 
   class << self
@@ -33,6 +34,7 @@ module Mailbox
     #
     # <b>*** Intended for synchronous unit testing of concurrent apps***</b>
     attr_accessor :synchronous
+
   end
 
   private
@@ -54,10 +56,11 @@ module Mailbox
 
   def __synchronous_fiber__
     executor = JRL::SynchronousDisposingExecutor.new
-    fiber = JRL::Fibers::ThreadFiber.new executor, "#{self.class.name} #{self.object_id} Mailbox synchronous", true
+    JRL::Fibers::ThreadFiber.new executor, "#{self.class.name} #{self.object_id} Mailbox synchronous", true
   end
 
   def __create_fiber__
+    return self.class.__fiber_factory__.create if self.class.__fiber_factory__
     JRL::Fibers::ThreadFiber.new( JRL::RunnableExecutorImpl.new, "#{self.class.name} #{self.object_id} Mailbox", true )
   end
 
@@ -90,7 +93,16 @@ module Mailbox
       @replyable = params[:replyable]
       @timeout = params[:timeout].nil? ? -1 : params[:timeout] * 1000
       @exception = params[:exception]
+
       @mailslot = true
+    end
+
+    def mailbox_thread_pool_size(count)
+      @__fiber_factory__ = JRL::Fibers::PoolFiberFactory.new(JRL::Concurrent::Executors.new_fixed_thread_pool(count, DaemonThreadFactory.new))
+    end
+
+    def __fiber_factory__
+      @__fiber_factory__ ||= nil
     end
     
     private
@@ -118,14 +130,14 @@ module Mailbox
       exception_method, @exception = @exception, nil
       define_method method_name do |*args|
 
-        self.send(@verbose_target, "enqueued #{method_name}") if defined? @verbose_target
+        self.send(@__verbose_target__, "enqueued #{method_name}") if defined? @__verbose_target__
 
         result = nil
         latch = JRL::Concurrent::CountDownLatch.new(1) if replyable
 
         __fiber__.execute do
           begin
-            self.send(@verbose_target, "dequeued #{method_name}") if defined? @verbose_target
+            self.send(@__verbose_target__, "dequeued #{method_name}") if defined? @__verbose_target__
             result = self.send(:"__#{method_name}__", *args )
           rescue Exception => ex
             raise if exception_method.nil?

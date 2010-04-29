@@ -22,6 +22,27 @@ class MailboxTest < Test::Unit::TestCase
     assert_not_equal JThread.current_thread.name, thread_info[:name]
   end
 
+  def test_mailslot_supports_threadpool_based_fibers
+    klass = Class.new do
+      include Mailbox
+      mailbox_thread_pool_size 2
+
+
+      mailslot
+      def test_method(latch, thread_info)
+        thread_info[:name] = JThread.current_thread.name
+        latch.count_down
+      end
+    end
+
+    thread_info = {}
+    latch = Latches::CountDownLatch.new( 1 )
+    klass.new.test_method(latch, thread_info)
+
+    assert( latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" )
+    assert_not_equal JThread.current_thread.name, thread_info[:name]
+  end
+
   def test_can_set_mailslot_to_callback_on_exception
     klass = Class.new do
       include Mailbox
