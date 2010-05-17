@@ -39,11 +39,11 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{mailbox}
-  s.rubygems_version = %q{1.3.5}
+  s.rubygems_version = %q{1.3.6}
   s.summary = %q{Mailbox is a JRuby module that simplifies concurrency and is backed by JVM threads.}
   s.test_files = [
-    "test/synchronized_test.rb",
-     "test/mailbox_test.rb",
+    "test/mailbox_test.rb",
+     "test/synchronized_test.rb",
      "test/test_helper.rb"
   ]
 
