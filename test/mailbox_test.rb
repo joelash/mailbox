@@ -75,6 +75,56 @@ class MailboxTest < Test::Unit::TestCase
     assert Mailbox.synchronous == false, "Mailbox is defaulting to synchronous execution"
   end
 
+  def test_default_is_run_with_exception_callbacks
+    assert !Mailbox.raise_exceptions_immediately, "Mailbox is defaulting to raising exceptions immediately"
+  end
+
+  def test_cannot_set_raise_exceptions_immediately_unless_in_synchronous_mode
+    begin
+      assert !Mailbox.synchronous
+      assert_raises(Exception) { Mailbox.raise_exceptions_immediately = true }
+    ensure
+      Mailbox.raise_exceptions_immediately = false
+    end
+  end
+
+  def test_raise_exceptions_immediately_is_turned_off_when_setting_synchronous_to_false
+    begin
+      Mailbox.synchronous = true
+      Mailbox.raise_exceptions_immediately = true
+      Mailbox.synchronous = false
+      assert !Mailbox.raise_exceptions_immediately
+    ensure
+      Mailbox.synchronous = false
+      Mailbox.raise_exceptions_immediately = false
+    end
+  end
+
+  def test_can_set_mailbox_to_ignore_exception_callback_and_raise_exceptions_for_tests
+    begin
+      Mailbox.synchronous = true
+      Mailbox.raise_exceptions_immediately = true
+      klass = Class.new do
+        include Mailbox
+        mailslot :exception => :should_not_run
+        def test_method
+          raise Exception.new('test exception')
+        end
+
+        def should_not_run exception
+          raise Exception.new('exception handled')
+        end
+      end
+
+      obj = klass.new
+      raised = assert_raises(Exception) { obj.test_method }
+      assert_equal 'test exception', raised.message
+    ensure
+      Mailbox.raise_exceptions_immediately = false
+    end
+
+  end
+
   def test_can_set_mailslot_to_run_synchronously
     begin
       Mailbox.synchronous = true

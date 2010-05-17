@@ -33,7 +33,17 @@ module Mailbox
     # methods should be run on the calling thread.
     #
     # <b>*** Intended for synchronous unit testing of concurrent apps***</b>
-    attr_accessor :synchronous
+    attr_reader :synchronous, :raise_exceptions_immediately
+
+    def synchronous= value
+      @synchronous = value
+      @raise_exceptions_immediately = false if value == false
+    end
+
+    def raise_exceptions_immediately= value
+      raise Exception.new('cannot set raise_exceptions_immediately when not in synchronous mode!') if value && !Mailbox.synchronous
+      @raise_exceptions_immediately = value
+    end
 
   end
 
@@ -140,7 +150,7 @@ module Mailbox
             self.send(@__verbose_target__, "dequeued #{method_name}") if defined? @__verbose_target__
             result = self.send(:"__#{method_name}__", *args )
           rescue Exception => ex
-            raise if exception_method.nil?
+            raise if exception_method.nil? || Mailbox.raise_exceptions_immediately
             self.send(:"#{exception_method}", ex)
           ensure
             latch.count_down if replyable
