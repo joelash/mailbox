@@ -291,4 +291,24 @@ class MailboxTest < Test::Unit::TestCase
     assert_equal expected, test_agent.msg_info
   end
 
+  def test_dispose
+    klass = Class.new do 
+      include Mailbox 
+      mailslot 
+      def count_down(latch)
+        latch.count_down
+      end
+    end
+    
+    test_agent = klass.new
+    latch = JRL::Concurrent::Latch.new 1
+    test_agent.count_down latch
+    assert latch.await(1), "timed out waiting for first latch" 
+
+    test_agent.dispose
+
+    latch = JRL::Concurrent::Latch.new 1
+    test_agent.count_down latch
+    assert !latch.await(1), "latch didn't time out after fiber was disposed"
+  end
 end

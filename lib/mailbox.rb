@@ -28,6 +28,10 @@ module Mailbox
     @__verbose_target__ = method_name
   end
 
+  def dispose
+    __fiber__.dispose
+  end
+
   class << self
     # Used to tell +Mailbox+ that all +mailslot+ 
     # methods should be run on the calling thread.
