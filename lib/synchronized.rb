@@ -3,12 +3,14 @@
 # This module goes hand in hand with +Mailbox+.
 # It simplifies concurrecncy within your 
 # JRuby applications.
+require 'monitor'
+
 module Synchronized
   
   private
   
-  def __mutex__
-    @mutex ||= Mutex.new
+  def __synchronizer__
+    @synchronizer ||= Monitor.new
   end
   
   def self.included(base)
@@ -27,6 +29,7 @@ module Synchronized
     def synchronized
       @synchronized = true
     end
+
     
     private
     
@@ -46,7 +49,7 @@ module Synchronized
       
 
       define_method( method_name, lambda do |*args| 
-        __mutex__.synchronize { self.send(:"__#{method_name}__", *args ) }  
+        __synchronizer__.synchronize { self.send(:"__#{method_name}__", *args ) }  
       end )
       
       @is_adding_synchronized_to_method = false

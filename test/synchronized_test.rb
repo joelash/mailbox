@@ -85,4 +85,23 @@ class SynchronizedTest < Test::Unit::TestCase
     assert_equal "thread 2", clazz.values[3], "4th wrong"
     
   end
+
+  def test_support_reentrant_synchronized_access
+    klass = Class.new do
+      include Mailbox
+
+      synchronized
+      def test_method_one
+        test_method_two
+      end
+
+      synchronized
+      def test_method_two
+        true
+      end
+    end
+
+    clazz = klass.new
+    assert clazz.test_method_one
+  end
 end
