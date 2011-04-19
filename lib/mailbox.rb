@@ -8,6 +8,7 @@
 # the <tt>:channel</tt> parameter on +mailslot+.
 
 require 'rubygems'
+require 'java'
 require 'jretlang'
 
 require File.dirname(__FILE__) + '/synchronized'
@@ -51,6 +52,10 @@ module Mailbox
 
   end
 
+  def __queue_depth__
+    __queue_counter__.get
+  end
+
   private
   def self.included(base)
     base.extend(Mailbox::ClassMethods)
@@ -84,6 +89,12 @@ module Mailbox
     fiber
   end
 
+  synchronized
+  def __queue_counter__
+    @__queue_counter__ ||= java.util.concurrent.atomic.AtomicInteger.new 
+  end
+
+  synchronized
   def __fiber__
     @fiber ||= __started_fiber__
   end
@@ -145,6 +156,7 @@ module Mailbox
       define_method method_name do |*args|
 
         self.send(@__verbose_target__, "enqueued #{method_name}") if defined? @__verbose_target__
+        __queue_counter__.get_and_increment
 
         result = nil
         latch = JRL::Concurrent::CountDownLatch.new(1) if replyable
@@ -152,6 +164,7 @@ module Mailbox
         __fiber__.execute do
           begin
             self.send(@__verbose_target__, "dequeued #{method_name}") if defined? @__verbose_target__
+            __queue_counter__.get_and_decrement
             result = self.send(:"__#{method_name}__", *args )
           rescue Exception => ex
             raise if exception_method.nil? || Mailbox.raise_exceptions_immediately

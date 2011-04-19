@@ -1,7 +1,20 @@
 require 'test_helper.rb'
 
+module JRL::Concurrent
+  class Latch
+    def fail_after_sec
+      raise Exception.new("timed out waiting one second for latch countdown - remaining count: #{count}") unless await 1
+    end
+  end
+end
+
 class MailboxTest < Test::Unit::TestCase
   JThread = java.lang.Thread
+
+
+  def jrl_latch count = 1
+    JRL::Concurrent::Latch.new count
+  end
 
   def test_mailslot_causes_execution_on_separate_thread
     klass = Class.new do
@@ -15,11 +28,37 @@ class MailboxTest < Test::Unit::TestCase
     end
 
     thread_info = {}
-    latch = Latches::CountDownLatch.new( 1 )
+    latch = jrl_latch
     klass.new.test_method(latch, thread_info)
 
-    assert( latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" )
+    latch.fail_after_sec
     assert_not_equal JThread.current_thread.name, thread_info[:name]
+  end
+
+  def test_mailbox_supports_concurrent_mailslot_calls_on_new_mailbox_object
+    klass = Class.new do
+      include Mailbox
+
+      attr_reader :failed
+      def initialize; @items = []; @failed = nil; end
+      
+      mailslot :exception => :fail_test
+      def one
+        raise Exception.new('items not empty!') unless @items.empty?
+        @items << 1
+        sleep 0.01
+        raise Exception.new("items not exactly [1]!") unless @items == [1]
+        @items.pop
+        raise Exception.new('items not empty') unless @items.empty?
+      end
+
+      def fail_test e; @failed = e; end
+    end
+    
+    o = klass.new
+    10.times { Thread.new { o.one } }
+
+    assert_nil o.failed
   end
 
   def test_mailslot_supports_threadpool_based_fibers
@@ -36,10 +75,10 @@ class MailboxTest < Test::Unit::TestCase
     end
 
     thread_info = {}
-    latch = Latches::CountDownLatch.new( 1 )
+    latch = jrl_latch
     klass.new.test_method(latch, thread_info)
 
-    assert( latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" )
+    latch.fail_after_sec
     assert_not_equal JThread.current_thread.name, thread_info[:name]
   end
 
@@ -64,10 +103,10 @@ class MailboxTest < Test::Unit::TestCase
       end
     end
 
-    latch = Latches::CountDownLatch.new( 1 )
+    latch = jrl_latch
     clazz = klass.new(latch)
     clazz.test_method
-    assert( latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" )
+    latch.fail_after_sec
     assert_equal "test exception", clazz.ex.message
   end
 
@@ -163,13 +202,13 @@ class MailboxTest < Test::Unit::TestCase
     end
 
     thread_info = {}
-    latch = Latches::CountDownLatch.new 1
+    latch = jrl_latch
     a_channel = JRL::Channel.new
 
     klass.new(a_channel)
     a_channel.publish :latch => latch, :thread_info => thread_info
 
-    assert latch.await( 1, Latches::TimeUnit::SECONDS ), "Timed out" 
+    latch.fail_after_sec
     assert_not_equal JThread.current_thread.name, thread_info[:name]
   end
 
@@ -189,7 +228,7 @@ class MailboxTest < Test::Unit::TestCase
     end
 
     thread_info = {}
-    latch = Latches::CountDownLatch.new 1
+    latch = jrl_latch
     request_channel = JRL::Channels::MemoryRequestChannel.new
 
     klass.new(request_channel)
@@ -202,11 +241,11 @@ class MailboxTest < Test::Unit::TestCase
       latch.count_down
     end
 
-    assert latch.await(1, Latches::TimeUnit::SECONDS), "timed out"
+    latch.fail_after_sec
     assert_equal "ya_rly!", response
   end
 
-  def test_should_support_replayble_messages
+  def test_should_support_replyable_messages
   
     klass = Class.new do
       include Mailbox
@@ -254,9 +293,35 @@ class MailboxTest < Test::Unit::TestCase
 
   end
 
+  def test_should_maintain_queue_depth
+    klass = Class.new do
+      include Mailbox
+      include Test::Unit::Assertions
+
+      def initialize latch
+        @latch = latch
+        __fiber__.execute do 
+          latch.fail_after_sec
+        end
+      end
+
+      mailslot 
+      def test_method latch
+        latch.count_down
+      end
+    end
+
+    hold_latch = jrl_latch
+    agent = klass.new hold_latch
+    method_latch = jrl_latch 10
+    10.times { agent.test_method method_latch }
+    assert_equal 10, agent.__queue_depth__
+    hold_latch.count_down
+    method_latch.fail_after_sec
+    assert_equal 0, agent.__queue_depth__
+  end
+
   def test_should_expose_hooks_to_message_enqueue_and_dequeue
-
-
     klass = Class.new do
       include Mailbox
       attr_accessor :msg_info
@@ -279,13 +344,13 @@ class MailboxTest < Test::Unit::TestCase
 
     end
 
-    latch = JRL::Concurrent::Latch.new 2
+    latch = jrl_latch 2
 
     test_agent = klass.new latch
     test_agent.test_method
     test_agent.test_method
 
-    assert latch.await(1), "timed out waiting for test_method to trip latch twice"
+    latch.fail_after_sec
 
     expected = ['enqueued test_method', 'dequeued test_method', 'enqueued test_method', 'dequeued test_method']
     assert_equal expected, test_agent.msg_info
@@ -301,13 +366,14 @@ class MailboxTest < Test::Unit::TestCase
     end
     
     test_agent = klass.new
-    latch = JRL::Concurrent::Latch.new 1
+    latch = jrl_latch
     test_agent.count_down latch
-    assert latch.await(1), "timed out waiting for first latch" 
+
+    latch.fail_after_sec
 
     test_agent.dispose
 
-    latch = JRL::Concurrent::Latch.new 1
+    latch = jrl_latch
     test_agent.count_down latch
     assert !latch.await(1), "latch didn't time out after fiber was disposed"
   end

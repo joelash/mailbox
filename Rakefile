@@ -1,4 +1,5 @@
 require "rubygems"
+require 'java'
 require "rake/testtask"
 require "rake/rdoctask"
 require "jeweler"
