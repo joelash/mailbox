@@ -56,6 +56,10 @@ module Mailbox
     __queue_counter__.get
   end
 
+  def __thread_name__
+    @__thread_name__ ||= "#{self.class.name} #{self.object_id} Mailbox"
+  end
+
   private
   def self.included(base)
     base.extend(Mailbox::ClassMethods)
@@ -80,7 +84,7 @@ module Mailbox
 
   def __create_fiber__
     return self.class.__fiber_factory__.create if self.class.__fiber_factory__
-    JRL::Fibers::ThreadFiber.new( JRL::RunnableExecutorImpl.new, "#{self.class.name} #{self.object_id} Mailbox", true )
+    JRL::Fibers::ThreadFiber.new( JRL::RunnableExecutorImpl.new, __thread_name__, true )
   end
 
   def __started_fiber__

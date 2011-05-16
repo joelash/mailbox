@@ -356,6 +356,16 @@ class MailboxTest < Test::Unit::TestCase
     assert_equal expected, test_agent.msg_info
   end
 
+  class NamedMailbox 
+    include Mailbox
+  end
+
+  def test_thread_name
+    box = NamedMailbox.new
+
+    assert_equal "MailboxTest::NamedMailbox #{box.object_id} Mailbox", box.__thread_name__
+  end
+
   def test_dispose
     klass = Class.new do 
       include Mailbox 
