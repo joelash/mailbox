@@ -36,7 +36,12 @@ module Mailbox
         return if !is_public_method || @__mailbox_defining_method__
         @__mailbox_defining_method__ = true
         __mailslot_class_methods__ << method_name.to_sym
-        # TODO: define execution
+        new_method_name = :"__mailslot_redef_#{method_name}__"
+        __mailbox_metaclass__.send :alias_method, new_method_name, method_name
+        __mailbox_metaclass__.send :define_method, method_name do |*args|
+          method_lambda = lambda { send new_method_name, *args }
+          __mailslot_singleton_executor__.execute method_lambda
+        end
         @__mailbox_defining_method__ = false
       end
 
