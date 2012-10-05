@@ -10,6 +10,11 @@ Mailbox is a JRuby mixin that simplifies JVM thread backed message passing concu
 
 Mailbox is Alpha software under active development.  Future releases may include backward compatibility breaking changes.
 
+Usage
+-----
+
+Coming soon...
+
 Contributing to mailbox
 -----------------------
  
